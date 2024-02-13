@@ -156,7 +156,6 @@ export class AppComponent implements OnInit {
     const endDate = this.endDate;
     if (date && endDate) {
       while (date <= endDate) {
-        console.log(date);
         periods.push(new Date(date));
         date.setMonth(date.getMonth() + 1);
       }
