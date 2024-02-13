@@ -4,6 +4,8 @@
     "inputFormHeaer": "Setup",
     "periodsFormHeader": "Periods",
     "actionsRequiredHeader": "Actions Required",
+    "breadcrumbs.home": "Home",
+    "breadcrumbs.tool": "Historical Calc Tool",
     "benefit.oas": "OAS",
     "benefit.gis": "GIS",
     "benefit.oas_gis": "OAS & GIS",

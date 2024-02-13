@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, FormGroup, FormControl, FormArray, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, FormGroup, FormControl, FormArray } from '@angular/forms';
 import { OAS_RATES } from './rates';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faAnglesDown } from '@fortawesome/free-solid-svg-icons';
@@ -34,7 +34,6 @@ interface PeriodFormGroup {
 })
 export class AppComponent implements OnInit {
 
-  readonly title = 'hist-calc-tool';
   readonly Benefit = Benefit;
   readonly benefits = Object.values(Benefit);
   readonly ClientSource = ClientSource;
@@ -92,8 +91,8 @@ export class AppComponent implements OnInit {
           { "lang": "en", "text": "English", "href": "/en" }
         ],
         breadcrumbs: [
-          { title: "Home", acronym: "GCintranet", href: "https://intranet.canada.ca/index-eng.asp" },
-          { title: "OAS Historical Calc Tool" }
+          { title: $localize `:@@breadcrumbs.home:Home`, acronym: "GCintranet", href: "https://intranet.canada.ca/index-eng.asp" },
+          { title: $localize `:@@breadcrumbs.tool:Historical Calc Tool` }
         ]
       },
       preFooter: {
