@@ -1,6 +1,8 @@
 {
   "locale": "fr",
   "translations": {
-    "inputFormHeaer": "Le Setup"
+    "inputFormHeaer": "Le Setup",
+    "periodsFormHeader": "Le Periods",
+    "actionsRequiredHeader": "Le Actions Required"
   }
 }

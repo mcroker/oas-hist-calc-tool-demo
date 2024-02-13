@@ -1,6 +1,8 @@
 {
-  "locale": "en-US",
+  "locale": "en",
   "translations": {
-    "inputFormHeaer": "Setup EN"
+    "inputFormHeaer": "Setup",
+    "periodsFormHeader": "Periods",
+    "actionsRequiredHeader": "Actions Required"
   }
 }

@@ -4,7 +4,6 @@
   <!--#include virtual="/app/cls/WET/gcintranet/v5_0_0/cdts/static/refTop.html" -->
 </noscript>
 
-
 <div id="cdts-def-top">
   <!-- Write closure fall-back static file -->
   <!-- /ROOT/app/cls/WET/gcintranet/run/cdts/static/top-en.html -->
@@ -101,7 +100,7 @@
       </tr>
     </table>
   </form>
-  <h1>Periods</h1>
+  <h1 i18n="@@periodsFormHeader">Periods</h1>
   <form [formGroup]="periodForm">
     <table *ngIf="numPeriods > 0" formArrayName="periods">
       <tr>
@@ -133,7 +132,7 @@
       </tr>
     </table>
   </form>
-  <h1>Actions Required</h1>
+  <h1 i18n="@@actionsRequiredHeader">Actions Required</h1>
   <div>
     <ul>
       <li *ngFor="let action of actionsRequired()">{{ action }}</li>

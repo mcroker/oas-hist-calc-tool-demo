@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import {  CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, FormGroup, FormControl, FormArray, Validators } from '@angular/forms';
 import { OAS_RATES } from './rates';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
@@ -94,10 +94,10 @@ export class AppComponent implements OnInit {
         exitSecureSite: { exitScript: true, displayModal: true, exitMsg: "Don't you want to stay?" }
       },
       top: {
-        "lngLinks": [{
-          "lang": "fr",
-          "text": "Français"
-        }],
+        "lngLinks": [
+          { "lang": "fr", "text": "Français", "href": "/fr"  },  // document.cookie = "firebase-country-override=ca";
+          { "lang": "en", "text": "English", "href": "/en" }
+        ],
         breadcrumbs: [
           { title: "Home", acronym: "GCintranet", href: "https://intranet.canada.ca/index-eng.asp" },
           { title: "OAS Historical Calc Tool" }
@@ -151,7 +151,7 @@ export class AppComponent implements OnInit {
 
   copyToEnd(i: number) {
     this.periodForm.controls.periods.controls
-      .filter((control, index) => (index >= i)) 
+      .filter((control, index) => (index >= i))
       .forEach((control) => {
         control.patchValue({ oasInitial: this.periodForm.controls.periods.controls[i].value.oasInitial });
       });

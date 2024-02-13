@@ -11,7 +11,7 @@
         }
       },
       "i18n": {
-        "sourceLocale": "en-US",
+        "sourceLocale": "en",
         "locales": {
           "fr": {
             "translation": "src/locale/messages.fr.json"

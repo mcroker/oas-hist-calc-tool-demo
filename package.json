@@ -5,7 +5,9 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:prod": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
+    "extract-i18n": "ng extract-i18n --format=json --output-path src/locale",
     "test": "ng test"
   },
   "private": true,

@@ -1,0 +1,33 @@
+{
+  "hosting": {
+    "public": "dist/hist-calc-tool/browser",
+    "predeploy": "npm run build:prod",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/en/**",
+        "destination": "/en/index.html"
+      },
+      {
+        "source": "/en",
+        "destination": "/en/index.html"
+      },
+      {
+        "source": "/fr/**",
+        "destination": "/fr/index.html"
+      },
+      {
+        "source": "/fr",
+        "destination": "/fr/index.html"
+      },
+      {
+        "source": "/**",
+        "destination": "/en/index.html"
+      }
+    ]
+  }
+}
