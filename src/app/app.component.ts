@@ -19,6 +19,7 @@ interface PeriodFormGroup {
   oasInitial: FormControl<number | null>;
 }
 
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -39,18 +40,19 @@ export class AppComponent implements OnInit {
   readonly ClientSource = ClientSource;
   readonly clientSources = Object.values(ClientSource);
   readonly faAnglesDown = faAnglesDown;
+  readonly offset = new Date().getTimezoneOffset();
 
   public inputForm = this.fb.group({
-    startDate: ['2024-01'],
-    endDate: ['2024-03'],
-    dob: ['1949-01-01'],
-    actuariallyAdjustedMonths: [0],
-    fortieths: [40],
-    rateTable: [35],
-    netIncome: [0],
-    sqf: [0],
-    clientSource: [ClientSource.oas_online],
-    benefit: [Benefit.oas]
+    startDate: '2024-01',
+    endDate: '2024-03',
+    dob: '1949-01-01',
+    actuariallyAdjustedMonths: 0,
+    fortieths: 40,
+    rateTable: 35,
+    netIncome: 0,
+    sqf: 0,
+    clientSource: ClientSource.oas_online,
+    benefit: Benefit.oas
   });
 
   public periodForm = this.fb.group({
@@ -75,6 +77,33 @@ export class AppComponent implements OnInit {
     return this.periodForm.controls.periods.controls.length;
   }
 
+  get startDate(): Date | undefined | null {
+    if (this.inputForm.value.startDate === undefined || this.inputForm.value.startDate === null) {
+      return this.inputForm.value.startDate;
+    }
+    const date = new Date(this.inputForm.value.startDate);
+    date.setMinutes(date.getMinutes() + this.offset);
+    return date;
+  }
+
+  get endDate(): Date | undefined | null {
+    if (this.inputForm.value.endDate === undefined || this.inputForm.value.endDate === null) {
+      return this.inputForm.value.endDate;
+    }
+    const date = new Date(this.inputForm.value.endDate);
+    date.setMinutes(date.getMinutes() + this.offset);
+    return date;
+  }
+
+  get dob(): Date | undefined | null {
+    if (this.inputForm.value.dob === undefined || this.inputForm.value.dob === null) {
+      return this.inputForm.value.dob;
+    }
+    const date = new Date(this.inputForm.value.dob);
+    date.setMinutes(date.getMinutes() + this.offset);
+    return date;
+  }
+
   constructor(private fb: FormBuilder) {
     // empty
   }
@@ -91,8 +120,8 @@ export class AppComponent implements OnInit {
           { "lang": "en", "text": "English", "href": "/en" }
         ],
         breadcrumbs: [
-          { title: $localize `:@@breadcrumbs.home:Home`, acronym: "GCintranet", href: "https://intranet.canada.ca/index-eng.asp" },
-          { title: $localize `:@@breadcrumbs.tool:Historical Calc Tool` }
+          { title: $localize`:@@breadcrumbs.home:Home`, acronym: "GCintranet", href: "https://intranet.canada.ca/index-eng.asp" },
+          { title: $localize`:@@breadcrumbs.tool:Historical Calc Tool` }
         ]
       },
       preFooter: {
@@ -123,9 +152,11 @@ export class AppComponent implements OnInit {
 
   periodsInRange(): Date[] {
     const periods: Date[] = [];
-    if (this.inputForm.value.startDate && this.inputForm.value.endDate) {
-      const date = new Date(this.inputForm.value.startDate);
-      while (date <= new Date(this.inputForm.value.endDate)) {
+    const date = this.startDate;
+    const endDate = this.endDate;
+    if (date && endDate) {
+      while (date <= endDate) {
+        console.log(date);
         periods.push(new Date(date));
         date.setMonth(date.getMonth() + 1);
       }
@@ -212,7 +243,7 @@ export class AppComponent implements OnInit {
     if (this.inputForm.value.dob === undefined || this.inputForm.value.dob === null) {
       return undefined;
     }
-    const dob = new Date(this.inputForm.value.dob);
+    const dob = this.dob;
     if (dob === undefined || dob === null) {
       return undefined;
     }
@@ -226,9 +257,9 @@ export class AppComponent implements OnInit {
   }
 
   dateToString(date: Date): string {
-    const d = date.toLocaleString("default", { day: "2-digit" });;
-    const m = date.toLocaleString("default", { month: "2-digit" });
-    const y = date.toLocaleString("default", { year: "numeric" });
+    const d = date.toLocaleString("en-GB", { day: "2-digit" });;
+    const m = date.toLocaleString("en-GB", { month: "2-digit" });
+    const y = date.toLocaleString("en-GB", { year: "numeric" });
     return `${y}-${m}-${d}`;
   }
 
