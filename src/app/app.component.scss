@@ -1,0 +1,29 @@
+table,
+th,
+td {
+    padding: 5px;
+    .lbl {
+        text-align: right;
+        min-width: 220px;
+    }
+}
+
+th {
+    text-align: center;
+}
+
+td button {
+    vertical-align: middle;
+}
+
+td.currency {
+    text-align: right;
+}
+
+tr.totals td {
+    font-weight: bold;
+}
+
+input.currency {
+    text-align: right;
+}
