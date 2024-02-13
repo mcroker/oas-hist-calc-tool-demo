@@ -17,7 +17,7 @@
         <td class="lbl">Select Benefit</td>
         <td>
           <select formControlName="benefit">
-            <option *ngFor="let item of benefits" [ngValue]="item">{{ item }}</option>
+            <option *ngFor="let item of benefits" [ngValue]="item">{{ item | benefitRenderPipe }}</option>
           </select>
         </td>
       </tr>
@@ -25,7 +25,7 @@
         <td class="lbl">Source Client</td>
         <td>
           <select formControlName="clientSource">
-            <option *ngFor="let item of clientSources" [ngValue]="item">{{ item}}</option>
+            <option *ngFor="let item of clientSources" [ngValue]="item">{{ item | sourceRenderPipe }}</option>
           </select>
         </td>
       </tr>
@@ -37,8 +37,6 @@
                  min="1900-01-01"
                  max="1950-01-01"
                  formControlName="dob" />
-          <!-- [value]="dob | date:'yyyy-MM-dd'"
-                 (change)="updateDob($event)" /> -->
         </td>
       </tr>
       <tr>

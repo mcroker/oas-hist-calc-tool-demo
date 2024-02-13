@@ -3,6 +3,13 @@
   "translations": {
     "inputFormHeaer": "Setup",
     "periodsFormHeader": "Periods",
-    "actionsRequiredHeader": "Actions Required"
+    "actionsRequiredHeader": "Actions Required",
+    "benefit.oas": "OAS",
+    "benefit.gis": "GIS",
+    "benefit.oas_gis": "OAS & GIS",
+    "benefit.alw": "ALW",
+    "benefit.alws": "ALWS",
+    "source.ia": "IA",
+    "source.oas_online": "OAS Online"
   }
 }

@@ -4,6 +4,10 @@ import { FormBuilder, ReactiveFormsModule, FormGroup, FormControl, FormArray, Va
 import { OAS_RATES } from './rates';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faAnglesDown } from '@fortawesome/free-solid-svg-icons';
+import { Benefit } from './benefit.enum';
+import { ClientSource } from './source.enum';
+import { BenefitRenderPipe } from './benefit.pipe';
+import { SourceRenderPipe } from './source.pipe';
 
 interface Period {
   date: Date | null | undefined;
@@ -15,26 +19,15 @@ interface PeriodFormGroup {
   oasInitial: FormControl<number | null>;
 }
 
-enum ClientSource {
-  ia = 'ia',
-  oas_online = 'oas_online'
-}
-
-enum Benefit {
-  oas = 'oas',
-  gis = 'gis',
-  oas_gis = 'oas+gis',
-  alw = 'alw',
-  alws = 'alws'
-}
-
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    FontAwesomeModule
+    FontAwesomeModule,
+    BenefitRenderPipe,
+    SourceRenderPipe
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
@@ -95,7 +88,7 @@ export class AppComponent implements OnInit {
       },
       top: {
         "lngLinks": [
-          { "lang": "fr", "text": "Français", "href": "/fr"  },  // document.cookie = "firebase-country-override=ca";
+          { "lang": "fr", "text": "Français", "href": "/fr" },  // document.cookie = "firebase-country-override=ca";
           { "lang": "en", "text": "English", "href": "/en" }
         ],
         breadcrumbs: [
