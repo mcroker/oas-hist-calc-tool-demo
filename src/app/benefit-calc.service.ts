@@ -99,8 +99,11 @@ export class BenefitCalcService {
       if (input.gisInitialSum === null || input.gisSum === null) {
         actions.push('Complete form for GIS actions');
       } else {
-        actions.push('Actions for GIS Adjustment not implemetned in the tool - panic!'); // TODO
+        actions.push('Actions for GIS Adjustment not implemetned in the tool - it\'s a disaster!'); // TODO
       }
+    }
+    if (input.benefit !== Benefit.oas && input.benefit !== Benefit.gis && input.benefit !== Benefit.oas_gis) {
+      actions.push(`Benefit type ${input.benefit} not implemented in the tool - it\'s a disaster!`); // TODO');
     }
     if (actions.length === 0) {
       actions.push('No actions required');
