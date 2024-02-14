@@ -9,7 +9,6 @@ export class BenefitRenderPipe implements PipeTransform {
   constructor() { }
 
   transform(value: string, ...args: any[]): string {
-    console.log('value', value);
     switch (value) {
       case Benefit.oas:
         return $localize`:@@benefit.oas:OAS`;

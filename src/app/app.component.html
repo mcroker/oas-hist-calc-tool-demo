@@ -24,8 +24,8 @@
       <tr>
         <td class="lbl">Source Client</td>
         <td>
-          <select formControlName="clientSource">
-            <option *ngFor="let item of clientSources" [ngValue]="item">{{ item | sourceRenderPipe }}</option>
+          <select formControlName="source">
+            <option *ngFor="let item of sources" [ngValue]="item">{{ item | sourceRenderPipe }}</option>
           </select>
         </td>
       </tr>
@@ -36,7 +36,8 @@
                  type="date"
                  min="1900-01-01"
                  max="1950-01-01"
-                 formControlName="dob" />
+                 formControlName="dob"
+                 required />
         </td>
       </tr>
       <tr>
@@ -61,13 +62,6 @@
         </td>
       </tr>
       <tr>
-      <tr *ngIf="benefit === 'gis' || benefit === 'oas+gis'">
-        <td class="lbl">Net Income</td>
-        <td>
-          <input #NetIncome type="number" formControlName="netIncome" />
-        </td>
-      </tr>
-      <tr>
       <tr>
       <tr *ngIf="benefit === 'gis' || benefit === 'oas+gis'">
         <td class="lbl">SQF</td>
@@ -83,7 +77,8 @@
                  type="month"
                  min="2008-01"
                  max="2024-03"
-                 formControlName="startDate" />
+                 formControlName="startDate"
+                 required />
 
         </td>
       </tr>
@@ -93,13 +88,39 @@
                  type="month"
                  min="2008-01"
                  max="2024-03"
-                 formControlName="endDate" />
+                 formControlName="endDate"
+                 required />
         </td>
       </tr>
+
     </table>
   </form>
-  <h1 i18n="@@periodsFormHeader">Periods</h1>
+
   <form [formGroup]="periodForm">
+
+    <ng-container *ngIf="benefit === Benefit.gis || benefit === Benefit.oas_gis">
+      <h1 i18n="@@incomeFormHeader">Net Income</h1>
+      <table *ngIf="numIncomes > 0" formArrayName="incomes">
+        <tr>
+          <th>Year</th>
+          <th>Net Income</th>
+        </tr>
+        <tr *ngFor="let incomeGroup of incomeGroups.controls;let i=index" [formGroup]="incomeGroup">
+          <td>{{ incomeGroup.value.financialYear | financialYearRenderPipe }}</td>
+          <td>
+            <input type="number"
+                   class="currency"
+                   formControlName="netIncome"
+                   min="0.01"
+                   step="0.01"
+                   max="5000"
+                   name="income-{{i}}">
+          </td>
+        </tr>
+      </table>
+    </ng-container>
+
+    <h1 i18n="@@periodsFormHeader">Periods</h1>
     <table *ngIf="numPeriods > 0" formArrayName="periods">
       <tr>
         <th>Period</th>
@@ -117,9 +138,8 @@
                  step="0.01"
                  max="5000"
                  name="initial-{{i}}">
-          <button (click)="copyToEnd(i)">
-            <i class="fa-solid fa-copy" alt="Copy to end"> </i>
-            <fa-icon [icon]="faAnglesDown"></fa-icon>
+          <button (click)="copyOasInitialToEnd(i)">
+            <fa-icon [icon]="faAnglesDown" alt="Copy to end"></fa-icon>
           </button>
         </td>
       </tr>
@@ -130,6 +150,7 @@
       </tr>
     </table>
   </form>
+
   <h1 i18n="@@actionsRequiredHeader">Actions Required</h1>
   <div>
     <ul>

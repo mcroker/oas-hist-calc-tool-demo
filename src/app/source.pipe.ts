@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { ClientSource } from './source.enum';
+import { Source } from './source.enum';
 
 @Pipe({
   name: 'sourceRenderPipe',
@@ -9,11 +9,10 @@ export class SourceRenderPipe implements PipeTransform {
   constructor() { }
 
   transform(value: string, ...args: any[]): string {
-    console.log('value', value);
     switch (value) {
-      case ClientSource.ia:
+      case Source.ia:
         return $localize`:@@source.ia:IA`;
-      case ClientSource.oas_online:
+      case Source.oas_online:
         return $localize`:@@source.oas_online:OAS Online`;
       default:
         return value;

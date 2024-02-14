@@ -1,24 +1,27 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, FormGroup, FormControl, FormArray } from '@angular/forms';
-import { OAS_RATES } from './rates';
+import { FormBuilder, ReactiveFormsModule, FormGroup, FormControl, FormArray, Validators } from '@angular/forms';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faAnglesDown } from '@fortawesome/free-solid-svg-icons';
-import { Benefit } from './benefit.enum';
-import { ClientSource } from './source.enum';
+import { Benefit, isBenefit } from './benefit.enum';
+import { Source, isSource } from './source.enum';
 import { BenefitRenderPipe } from './benefit.pipe';
 import { SourceRenderPipe } from './source.pipe';
-
-interface Period {
-  date: Date | null | undefined;
-  oasInitial: number | null | undefined;
-}
+import { MaritalStatus } from './marital.enum';
+import { BenefitCalcService } from './benefit-calc.service';
+import { dateToString, priorFinancialYear } from './utils';
+import { Period } from './period.interface';
+import { FinancialYearRenderPipe } from './financialyear.pipe';
 
 interface PeriodFormGroup {
   date: FormControl<Date | null>;
   oasInitial: FormControl<number | null>;
 }
 
+interface IncomeFormGroup {
+  financialYear: FormControl<number | null>;
+  netIncome: FormControl<number | null>;
+}
 
 @Component({
   selector: 'app-root',
@@ -28,7 +31,8 @@ interface PeriodFormGroup {
     ReactiveFormsModule,
     FontAwesomeModule,
     BenefitRenderPipe,
-    SourceRenderPipe
+    SourceRenderPipe,
+    FinancialYearRenderPipe
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
@@ -37,8 +41,8 @@ export class AppComponent implements OnInit {
 
   readonly Benefit = Benefit;
   readonly benefits = Object.values(Benefit);
-  readonly ClientSource = ClientSource;
-  readonly clientSources = Object.values(ClientSource);
+  readonly Source = Source;
+  readonly sources = Object.values(Source);
   readonly faAnglesDown = faAnglesDown;
   readonly offset = new Date().getTimezoneOffset();
 
@@ -49,13 +53,14 @@ export class AppComponent implements OnInit {
     actuariallyAdjustedMonths: 0,
     fortieths: 40,
     rateTable: 35,
-    netIncome: 0,
+    maritalStatus: MaritalStatus.single,
     sqf: 0,
-    clientSource: ClientSource.oas_online,
-    benefit: Benefit.oas
+    source: Source.oas_online,
+    benefit: Benefit.oas,
   });
 
   public periodForm = this.fb.group({
+    incomes: new FormArray<FormGroup<IncomeFormGroup>>([]),
     periods: new FormArray<FormGroup<PeriodFormGroup>>([])
   });
 
@@ -63,48 +68,91 @@ export class AppComponent implements OnInit {
     return this.periodForm.get('periods') as FormArray;
   }
 
-  private periodGroupMap: { [date: string]: FormGroup } = {};
-
-  get clientSource(): string | undefined | null {
-    return this.inputForm.value.clientSource;
+  get incomeGroups(): FormArray<FormGroup<IncomeFormGroup>> {
+    return this.periodForm.get('incomes') as FormArray;
   }
 
-  get benefit(): string | undefined | null {
-    return this.inputForm.value.benefit;
+  private periodGroupMap: { [date: string]: FormGroup<PeriodFormGroup> } = {};
+  private incomeGroupMap: { [year: number]: FormGroup<IncomeFormGroup> } = {};
+
+  get source(): Source {
+    if (isSource(this.inputForm.value.source)) {
+      return this.inputForm.value.source;
+    } else {
+      throw new Error('Source is invalid');
+    }
+  }
+
+  get benefit(): Benefit {
+    if (isBenefit(this.inputForm.value.benefit)) {
+      return this.inputForm.value.benefit;
+    } else {
+      throw new Error('Benefit is invalid');
+    }
   }
 
   get numPeriods(): number {
     return this.periodForm.controls.periods.controls.length;
   }
 
-  get startDate(): Date | undefined | null {
+  get numIncomes(): number {
+    return this.periodForm.controls.incomes.controls.length;
+  }
+
+  private get startDate(): Date | null {
     if (this.inputForm.value.startDate === undefined || this.inputForm.value.startDate === null) {
-      return this.inputForm.value.startDate;
+      return null;
     }
     const date = new Date(this.inputForm.value.startDate);
+    if (isNaN(date.getTime())) {
+      return null;
+    }
     date.setMinutes(date.getMinutes() + this.offset);
     return date;
   }
 
-  get endDate(): Date | undefined | null {
+  private get endDate(): Date | null {
     if (this.inputForm.value.endDate === undefined || this.inputForm.value.endDate === null) {
-      return this.inputForm.value.endDate;
+      return null;
     }
     const date = new Date(this.inputForm.value.endDate);
+    if (isNaN(date.getTime())) {
+      return null;
+    }
     date.setMinutes(date.getMinutes() + this.offset);
     return date;
   }
 
-  get dob(): Date | undefined | null {
+  private get dob(): Date | null {
     if (this.inputForm.value.dob === undefined || this.inputForm.value.dob === null) {
-      return this.inputForm.value.dob;
+      return null;
     }
     const date = new Date(this.inputForm.value.dob);
+    if (isNaN(date.getTime())) {
+      return null;
+    }
     date.setMinutes(date.getMinutes() + this.offset);
     return date;
   }
 
-  constructor(private fb: FormBuilder) {
+  private get actuariallyAdjustedMonths(): number | null {
+    if (this.inputForm.value.actuariallyAdjustedMonths === undefined || this.inputForm.value.actuariallyAdjustedMonths === null) {
+      return null;
+    }
+    return this.inputForm.value.actuariallyAdjustedMonths;
+  }
+
+  private get fortieths(): number | null {
+    if (this.inputForm.value.fortieths === undefined || this.inputForm.value.fortieths === null) {
+      return null;
+    }
+    return this.inputForm.value.fortieths;
+  }
+
+  constructor(
+    private fb: FormBuilder,
+    private benefitCalcService: BenefitCalcService
+  ) {
     // empty
   }
 
@@ -137,13 +185,29 @@ export class AppComponent implements OnInit {
   }
 
   private createPeriodControls() {
+    const periodsInRange = this.periodsInRange();
+
+    // Income
+    const priorYears = [...new Set(periodsInRange.map(priorFinancialYear))];
+    this.periodForm.controls.incomes.clear();
+    for (const financialYear of priorYears) {
+      if (this.incomeGroupMap[financialYear] === undefined) {
+        this.incomeGroupMap[financialYear] = this.fb.group({
+          financialYear,
+          netIncome: new FormControl<number | null>(null)
+        });
+      }
+      this.periodForm.controls.incomes.push(this.incomeGroupMap[financialYear]);
+    }
+
+    // Periods
     this.periodForm.controls.periods.clear();
-    for (const period of this.periodsInRange()) {
-      const key = this.dateToString(period)
+    for (const period of periodsInRange) {
+      const key = dateToString(period)
       if (this.periodGroupMap[key] === undefined) {
         this.periodGroupMap[key] = this.fb.group({
-          date: [period],
-          oasInitial: [0]
+          date: period,
+          oasInitial: new FormControl<number | null>(null)
         });
       }
       this.periodForm.controls.periods.push(this.periodGroupMap[key]);
@@ -163,15 +227,20 @@ export class AppComponent implements OnInit {
     return periods;
   }
 
-  periodValues(): Period[] {
+  private periodValues(): Period[] {
     return (this.periodForm.value.periods || [])
-      .map((period: Partial<Period>) => ({
-        date: period.date,
-        oasInitial: period.oasInitial || 0
-      }));
+      .map((period) => {
+        if (period.date === undefined || period.date === null) {
+          throw new Error('Period date is undefined');
+        }
+        return {
+          date: period.date,
+          oasInitial: (undefined !== period.oasInitial) ? period.oasInitial : null
+        };
+      });
   }
 
-  copyToEnd(i: number) {
+  copyOasInitialToEnd(i: number) {
     this.periodForm.controls.periods.controls
       .filter((control, index) => (index >= i))
       .forEach((control) => {
@@ -179,87 +248,52 @@ export class AppComponent implements OnInit {
       });
   }
 
-  sumOas(): number {
-    return this.periodValues()
-      .map((period) => this.oasRateCalc(period.date) || 0)
-      .reduce((acc, oasRate) => acc + (oasRate || 0), 0);
-  }
-
-  sumOasInitial(): number {
-    return this.periodValues()
-      .reduce((acc, period) => acc + (period.oasInitial || 0), 0);
-  }
-
-  actionsRequired(): string[] | undefined {
-    const actions: string[] = [];
-    if (this.benefit === Benefit.oas || this.benefit === Benefit.oas_gis) {
-      const oasSum = this.sumOas();
-      const oasInitialSum = this.sumOasInitial();
-      if (this.clientSource === ClientSource.oas_online) {
-        const adjustment = Math.abs(oasInitialSum - oasSum).toFixed(2);
-        actions.push(`Update Amount Override Value with New Amount \$${adjustment}`)
-      } else if (this.clientSource === ClientSource.ia) {
-        if (oasSum > oasInitialSum) {
-          const adjustment = ((oasSum - oasInitialSum) / this.numPeriods).toFixed(2)
-          actions.push(`Set Monthly Amount Override Value for \$${adjustment}`)
-        } else {
-          const adjustment = (oasInitialSum - oasSum).toFixed(2);
-          actions.push(`Set Manual Overpayment Value for \$${adjustment}`)
-        }
-      }
-    }
-    if (actions.length === 0) {
-      actions.push('No actions required');
-    }
-    return actions;
-  }
-
-  oasRateCalc(date: Date | undefined | null): number | undefined {
+  oasRateCalc(date: Date | undefined | null): number | null {
     if (date === undefined || date === null) {
-      return undefined;
-    }
-    const rates = OAS_RATES[this.dateToString(date)];
-    if (rates === undefined) {
-      throw Error('No rate table');
+      return null;
     }
 
-    const age = this.getAgeAt(date);
-    if (age === undefined
-      || this.inputForm.value.actuariallyAdjustedMonths === undefined || this.inputForm.value.actuariallyAdjustedMonths === null
-      || this.inputForm.value.fortieths === undefined || this.inputForm.value.fortieths === null
-    ) {
-      return undefined;
-    }
-
-    const oasMaxRate = (age >= 75)
-      ? rates.pension75 || rates.pension
-      : rates.pension;
-
-    return oasMaxRate * (this.inputForm.value.fortieths / 40) * (1 + (0.006 * this.inputForm.value.actuariallyAdjustedMonths))
-  }
-
-  getAgeAt(date: Date): number | undefined {
-    if (this.inputForm.value.dob === undefined || this.inputForm.value.dob === null) {
-      return undefined;
-    }
+    const actuariallyAdjustedMonths = this.actuariallyAdjustedMonths;
+    const fortieths = this.fortieths;
     const dob = this.dob;
-    if (dob === undefined || dob === null) {
-      return undefined;
+    if (actuariallyAdjustedMonths === null || fortieths === null || dob === null) {
+      return null;
     }
-    let currentYear = date.getFullYear();
-    let birthYear = dob.getFullYear();
-    let age = currentYear - birthYear;
-    if (date < new Date(dob.setFullYear(currentYear))) {
-      age = age - 1;
-    }
-    return age;
+
+    return this.benefitCalcService.oasRateCalc({ date, dob, actuariallyAdjustedMonths, fortieths });
   }
 
-  dateToString(date: Date): string {
-    const d = date.toLocaleString("en-GB", { day: "2-digit" });;
-    const m = date.toLocaleString("en-GB", { month: "2-digit" });
-    const y = date.toLocaleString("en-GB", { year: "numeric" });
-    return `${y}-${m}-${d}`;
+  sumOas(): number | null {
+    const oasRates = this.periodValues().map((period) => this.oasRateCalc(period.date))
+    if (oasRates.every((rate) => (typeof rate === 'number'))) {
+      return (oasRates as number[]).reduce((acc, oasRate) => acc + (oasRate || 0), 0);
+    } else {
+      return null;
+    }
+  }
+
+  sumOasInitial(): number | null {
+    const periodValues = this.periodValues();
+    if (!periodValues.every((period) => typeof period.oasInitial === 'number')) {
+      return null;
+    }
+    return (periodValues as (Period & { oasInitial: number })[])
+      .reduce((acc, period) => acc + period.oasInitial, 0);
+  }
+
+  actionsRequired(): string[] | null {
+    const oasSum = this.sumOas();
+    const oasInitialSum = this.sumOasInitial();
+    if (oasSum === null || oasInitialSum === null) {
+      return null;
+    }
+    return this.benefitCalcService.actionsRequired({
+      benefit: this.benefit,
+      source: this.source,
+      oasSum,
+      oasInitialSum,
+      numPeriods: this.numPeriods
+    });
   }
 
   consoleLog(x: any) {
