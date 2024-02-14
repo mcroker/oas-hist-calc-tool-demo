@@ -10,6 +10,7 @@
   <!--#include virtual="/app/cls/WET/gcintranet/v5_0_0/cdts/static/top-en.html" -->
 </div>
 <main property="mainContentOfPage" typeof="WebPageElement" class="container">
+  <h2>Warning: This is a prototype, do not use.</h2>
   <h1 i18n="@@inputFormHeaer">Setup</h1>
   <form [formGroup]="inputForm">
     <table>
@@ -29,7 +30,7 @@
           </select>
         </td>
       </tr>
-      <tr *ngIf="benefit === 'oas' || benefit === 'oas+gis'">
+      <tr *ngIf="showOasFields">
         <td class="lbl">Date of Birth</td>
         <td>
           <input #DOB
@@ -40,36 +41,26 @@
                  required />
         </td>
       </tr>
-      <tr>
-      <tr *ngIf="benefit === 'oas' || benefit === 'oas+gis'">
+      <tr *ngIf="showOasFields">
         <td class="lbl">40ths</td>
         <td>
           <input #Forieths type="number" min=1 max=40 formControlName="fortieths" />
         </td>
       </tr>
-      <tr>
-      <tr *ngIf="benefit === 'oas' || benefit === 'oas+gis'">
+      <tr *ngIf="showOasFields">
         <td class="lbl">Actuarially Adjusted Months</td>
         <td>
           <input #ActuariallyAdjustedMonths type="number" min=1 max=100 formControlName="actuariallyAdjustedMonths" />
         </td>
       </tr>
-      <tr>
-      <tr *ngIf="benefit === 'gis' || benefit === 'oas+gis'">
-        <td class="lbl">Rate Table</td>
+      <tr *ngIf="showGisFields">
+        <td class="lbl">Marital Status</td>
         <td>
-          <input #RateTable type="number" min=1 max=40 formControlName="rateTable" />
+          <select formControlName="maritalStatus">
+            <option *ngFor="let item of maritalStatuses" [ngValue]="item">{{ item | maritalStatusRenderPipe }}</option>
+          </select>
         </td>
       </tr>
-      <tr>
-      <tr>
-      <tr *ngIf="benefit === 'gis' || benefit === 'oas+gis'">
-        <td class="lbl">SQF</td>
-        <td>
-          <input #NetIncome type="number" formControlName="sqf" />
-        </td>
-      </tr>
-      <tr>
       <tr>
         <td class="lbl">Start Date</td>
         <td>
@@ -92,13 +83,12 @@
                  required />
         </td>
       </tr>
-
     </table>
   </form>
 
   <form [formGroup]="periodForm">
 
-    <ng-container *ngIf="benefit === Benefit.gis || benefit === Benefit.oas_gis">
+    <ng-container *ngIf="showGisFields">
       <h1 i18n="@@incomeFormHeader">Net Income</h1>
       <table *ngIf="numIncomes > 0" formArrayName="incomes">
         <tr>
@@ -124,29 +114,58 @@
     <table *ngIf="numPeriods > 0" formArrayName="periods">
       <tr>
         <th>Period</th>
-        <th>OAS Rate</th>
-        <th>OAS Initial</th>
+        <ng-container *ngIf="showOasFields">
+          <th>OAS Rate</th>
+          <th>OAS Initial</th>
+        </ng-container>
+        <ng-container *ngIf="showGisFields">
+          <th>GIS Rate</th>
+          <th>GIS Initial</th>
+        </ng-container>
       </tr>
       <tr *ngFor="let periodGroup of periodGroups.controls;let i=index" [formGroup]="periodGroup">
         <td>{{ periodGroup.value.date | date : 'yyyy-MM-dd' }}</td>
-        <td class="currency">{{ oasRateCalc(periodGroup.value.date) | currency: "CAD" : "$" }}</td>
-        <td>
-          <input type="number"
-                 class="currency"
-                 formControlName="oasInitial"
-                 min="0.01"
-                 step="0.01"
-                 max="5000"
-                 name="initial-{{i}}">
-          <button (click)="copyOasInitialToEnd(i)">
-            <fa-icon [icon]="faAnglesDown" alt="Copy to end"></fa-icon>
-          </button>
-        </td>
+        <ng-container *ngIf="showOasFields">
+          <td class="currency">{{ oasRateCalc(periodGroup.value.date) | currency: "CAD" : "$" }}</td>
+          <td>
+            <input type="number"
+                   class="currency"
+                   formControlName="oasInitial"
+                   min="0.01"
+                   step="0.01"
+                   max="5000"
+                   name="oas-initial-{{i}}">
+            <button (click)="copyOasInitialToEnd(i)">
+              <fa-icon [icon]="faAnglesDown" alt="Copy to end"></fa-icon>
+            </button>
+          </td>
+        </ng-container>
+        <ng-container *ngIf="showGisFields">
+          <td class="currency">{{ gisRateCalc(periodGroup.value.date) | currency: "CAD" : "$" }}</td>
+          <td>
+            <input type="number"
+                   class="currency"
+                   formControlName="gisInitial"
+                   min="0.01"
+                   step="0.01"
+                   max="5000"
+                   name="gis-iIinitial-{{i}}">
+            <button (click)="copyGisInitialToEnd(i)">
+              <fa-icon [icon]="faAnglesDown" alt="Copy to end"></fa-icon>
+            </button>
+          </td>
+        </ng-container>
       </tr>
       <tr class="totals">
         <td>Totals</td>
-        <td class="currency">{{ sumOas() | currency: "CAD" : "$" }}</td>
-        <td class="currency">{{ sumOasInitial() | currency: "CAD" : "$" }}</td>
+        <ng-container *ngIf="showOasFields">
+          <td class="currency">{{ sumOas() | currency: "CAD" : "$" }}</td>
+          <td class="currency">{{ sumOasInitial() | currency: "CAD" : "$" }}</td>
+        </ng-container>
+        <ng-container *ngIf="showGisFields">
+          <td class="currency">{{ sumGis() | currency: "CAD" : "$" }}</td>
+          <td class="currency">{{ sumGisInitial() | currency: "CAD" : "$" }}</td>
+        </ng-container>
       </tr>
     </table>
   </form>

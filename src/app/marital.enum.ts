@@ -4,3 +4,7 @@ export enum MaritalStatus {
   married_to_non_pensioner = 'married_to_non_pensioner',
   married_to_allowance_recpient = 'married_to_allowance_recpient',
 }
+
+export function isMaritalStatus(x: any): x is MaritalStatus {
+  return Object.values(MaritalStatus).includes(x)
+}

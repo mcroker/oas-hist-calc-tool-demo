@@ -2,10 +2,10 @@ import { Pipe, PipeTransform } from '@angular/core';
 import { MaritalStatus } from './marital.enum';
 
 @Pipe({
-  name: 'maritalRenderPipe',
+  name: 'maritalStatusRenderPipe',
   standalone: true
 })
-export class MaritalRenderPipe implements PipeTransform {
+export class MaritalStatusRenderPipe implements PipeTransform {
   constructor() { }
 
   transform(value: string, ...args: any[]): string {

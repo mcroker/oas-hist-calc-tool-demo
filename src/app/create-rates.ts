@@ -1,33 +1,20 @@
 import { promises } from 'fs';
 import * as path from 'path';
+import { Rates } from './rates.enum';
 
-export interface OASRate {
-    pension: number;              // OAS Pension
-    pension75?: number;           // OAS Pension (Age 75 and Over)
-    gisSingle: number;            // GIS Single
-    gisSingleEn?: number;         // GIS Single Enhancement
-    gisMarToPen: number;          // GIS Married/C-L to Pensioner
-    gisMarToPenEn?: number;       // GIS Married/C-L to Pensioner Enhancement
-    gisMarToNonPen: number;       // GIS Married/C-L to Non-Pensioner
-    gisMarToNonPenEn?: number;    // GIS Married/C-L to Non-Pensioner Enhancement
-    gisMarToAllowRcpt: number;    // GIS Married/C-L to Allowance Recipient
-    gisMarToAllowRcptEn?: number; // GIS Married/C-L to Allowance Recipient Enhancement
-    allow: number;                // Allowance
-    allowEn?: number;             // Allowance Enhancement
-    allowSurvior?: number;        // Allowance for the Survivor
-    allowSurviorEn?: number;      // Allowance for the Survivor Enhancement
-  }
+// Utility to convert csv to rate constant
+// Not used in application
 
 (async () => {
     const file = path.join(__dirname, 'rates.csv');
     const data = await promises.readFile(file, 'utf-8');
     const of = path.join(__dirname, 'rates.json');
 
-    const outs: { [key: string]: Partial<OASRate> } = {};
+    const outs: { [key: string]: Partial<Rates> } = {};
     const d = data.split('\n').forEach((line) => {
-        const l = line.split(/ *, */).map(s => String(s).replace(/\$-/g, '0').replace(/\$/g, '').replace(/"/g,'').trim());
+        const l = line.split(/ *, */).map(s => String(s).replace(/\$-/g, '0').replace(/\$/g, '').replace(/"/g, '').trim());
         const date = l[0];
-        const out: Partial<OASRate> = {};
+        const out: Partial<Rates> = {};
         out.pension = parseFloat(l[1]);
         if (l[2] !== '') {
             out.pension75 = parseFloat(l[2]);

@@ -40,15 +40,14 @@ export class BenefitCalcService {
     date: Date,
     maritalStatus: MaritalStatus,
     netIncome: number,
-    actuariallyAdjustedMonths: number,
-    fortieths: number
+    oasIncome: number
   }): number {
     const rates = OAS_RATES[dateToString(input.date)];
     if (rates === undefined) {
       throw Error('No rate table');
     }
 
-    const gisRate = (() => {
+    const gisMaxRate = (() => {
       switch (input.maritalStatus) {
         case MaritalStatus.single:
           return rates.gisSingle;
@@ -61,31 +60,46 @@ export class BenefitCalcService {
       }
     })();
 
-    const applicableIncome = input.netIncome
+    const applicableIncome = input.netIncome - input.oasIncome;
 
+    const gisRate = Math.max(0, gisMaxRate - (applicableIncome / 2));
     return gisRate;
+
   }
 
   actionsRequired(input: {
     benefit: Benefit,
     source: Source,
-    oasInitialSum: number,
-    oasSum: number,
+    oasInitialSum: number | null,
+    oasSum: number | null,
+    gisInitialSum: number | null,
+    gisSum: number | null,
     numPeriods: number
   }): string[] {
     const actions: string[] = [];
     if (input.benefit === Benefit.oas || input.benefit === Benefit.oas_gis) {
-      if (input.source === Source.oas_online) {
-        const adjustment = Math.abs(input.oasInitialSum - input.oasSum).toFixed(2);
-        actions.push(`Update Amount Override Value with New Amount \$${adjustment}`)
-      } else if (input.source === Source.ia) {
-        if (input.oasSum > input.oasInitialSum) {
-          const adjustment = ((input.oasSum - input.oasInitialSum) / input.numPeriods).toFixed(2)
-          actions.push(`Set Monthly Amount Override Value for \$${adjustment}`)
-        } else {
-          const adjustment = (input.oasInitialSum - input.oasSum).toFixed(2);
-          actions.push(`Set Manual Overpayment Value for \$${adjustment}`)
+      if (input.oasInitialSum === null || input.oasSum === null) {
+        actions.push('Complete form for OAS actions');
+      } else {
+        if (input.source === Source.oas_online) {
+          const adjustment = Math.abs(input.oasInitialSum - input.oasSum).toFixed(2);
+          actions.push(`Update Amount Override Value with New Amount \$${adjustment}`)
+        } else if (input.source === Source.ia) {
+          if (input.oasSum > input.oasInitialSum) {
+            const adjustment = ((input.oasSum - input.oasInitialSum) / input.numPeriods).toFixed(2)
+            actions.push(`Set Monthly Amount Override Value for \$${adjustment}`)
+          } else {
+            const adjustment = (input.oasInitialSum - input.oasSum).toFixed(2);
+            actions.push(`Set Manual Overpayment Value for \$${adjustment}`)
+          }
         }
+      }
+    }
+    if (input.benefit === Benefit.gis || input.benefit === Benefit.oas_gis) {
+      if (input.gisInitialSum === null || input.gisSum === null) {
+        actions.push('Complete form for GIS actions');
+      } else {
+        actions.push('Actions for GIS Adjustment not implemetned in the tool - panic!'); // TODO
       }
     }
     if (actions.length === 0) {

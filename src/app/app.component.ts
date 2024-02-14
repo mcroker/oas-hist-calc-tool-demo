@@ -7,15 +7,17 @@ import { Benefit, isBenefit } from './benefit.enum';
 import { Source, isSource } from './source.enum';
 import { BenefitRenderPipe } from './benefit.pipe';
 import { SourceRenderPipe } from './source.pipe';
-import { MaritalStatus } from './marital.enum';
+import { MaritalStatus, isMaritalStatus } from './marital.enum';
 import { BenefitCalcService } from './benefit-calc.service';
 import { dateToString, priorFinancialYear } from './utils';
 import { Period } from './period.interface';
 import { FinancialYearRenderPipe } from './financialyear.pipe';
+import { MaritalStatusRenderPipe } from './martial.pipe';
 
 interface PeriodFormGroup {
   date: FormControl<Date | null>;
   oasInitial: FormControl<number | null>;
+  gisInitial: FormControl<number | null>;
 }
 
 interface IncomeFormGroup {
@@ -32,7 +34,8 @@ interface IncomeFormGroup {
     FontAwesomeModule,
     BenefitRenderPipe,
     SourceRenderPipe,
-    FinancialYearRenderPipe
+    FinancialYearRenderPipe,
+    MaritalStatusRenderPipe
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
@@ -43,6 +46,8 @@ export class AppComponent implements OnInit {
   readonly benefits = Object.values(Benefit);
   readonly Source = Source;
   readonly sources = Object.values(Source);
+  readonly MaritalStatus = MaritalStatus;
+  readonly maritalStatuses = Object.values(MaritalStatus);
   readonly faAnglesDown = faAnglesDown;
   readonly offset = new Date().getTimezoneOffset();
 
@@ -52,9 +57,7 @@ export class AppComponent implements OnInit {
     dob: '1949-01-01',
     actuariallyAdjustedMonths: 0,
     fortieths: 40,
-    rateTable: 35,
     maritalStatus: MaritalStatus.single,
-    sqf: 0,
     source: Source.oas_online,
     benefit: Benefit.oas,
   });
@@ -88,6 +91,22 @@ export class AppComponent implements OnInit {
       return this.inputForm.value.benefit;
     } else {
       throw new Error('Benefit is invalid');
+    }
+  }
+
+  get showOasFields(): boolean {
+    return this.benefit === Benefit.oas || this.benefit === Benefit.oas_gis;
+  }
+
+  get showGisFields(): boolean {
+    return this.benefit === Benefit.gis || this.benefit === Benefit.oas_gis;
+  }
+
+  get maritalStatus(): MaritalStatus {
+    if (isMaritalStatus(this.inputForm.value.maritalStatus)) {
+      return this.inputForm.value.maritalStatus;
+    } else {
+      throw new Error('Martial Status is invalid');
     }
   }
 
@@ -207,7 +226,8 @@ export class AppComponent implements OnInit {
       if (this.periodGroupMap[key] === undefined) {
         this.periodGroupMap[key] = this.fb.group({
           date: period,
-          oasInitial: new FormControl<number | null>(null)
+          oasInitial: new FormControl<number | null>(null),
+          gisInitial: new FormControl<number | null>(null)
         });
       }
       this.periodForm.controls.periods.push(this.periodGroupMap[key]);
@@ -235,10 +255,23 @@ export class AppComponent implements OnInit {
         }
         return {
           date: period.date,
-          oasInitial: (undefined !== period.oasInitial) ? period.oasInitial : null
+          oasInitial: (undefined !== period.oasInitial) ? period.oasInitial : null,
+          gisInitial: (undefined !== period.gisInitial) ? period.gisInitial : null
         };
       });
   }
+
+  private getNetIncomeForFYPriorToDate(date: Date): number | null {
+    const financialYear = priorFinancialYear(date);
+    const control = this.incomeGroupMap[financialYear];
+    const netIncome = control?.value.netIncome;
+    if (typeof netIncome !== 'number') {
+      return null;
+    }
+    return netIncome;
+  }
+
+  // Display functons
 
   copyOasInitialToEnd(i: number) {
     this.periodForm.controls.periods.controls
@@ -247,6 +280,17 @@ export class AppComponent implements OnInit {
         control.patchValue({ oasInitial: this.periodForm.controls.periods.controls[i].value.oasInitial });
       });
   }
+
+  copyGisInitialToEnd(i: number) {
+    this.periodForm.controls.periods.controls
+      .filter((control, index) => (index >= i))
+      .forEach((control) => {
+        control.patchValue({ gisInitial: this.periodForm.controls.periods.controls[i].value.gisInitial });
+      });
+  }
+
+  // Calculation Facades
+  // OAS
 
   oasRateCalc(date: Date | undefined | null): number | null {
     if (date === undefined || date === null) {
@@ -281,17 +325,52 @@ export class AppComponent implements OnInit {
       .reduce((acc, period) => acc + period.oasInitial, 0);
   }
 
-  actionsRequired(): string[] | null {
-    const oasSum = this.sumOas();
-    const oasInitialSum = this.sumOasInitial();
-    if (oasSum === null || oasInitialSum === null) {
+  // Calculation Facades
+  // GIS
+
+  gisRateCalc(date: Date | undefined | null): number | null {
+    if (date === undefined || date === null) {
       return null;
     }
+
+    const maritalStatus = this.maritalStatus;
+    const oasIncome = this.oasRateCalc(date);
+    const netIncome = this.getNetIncomeForFYPriorToDate(date);
+    if (oasIncome === null || netIncome === null) {
+      return null;
+    }
+    return this.benefitCalcService.gisRateCalc({ date, maritalStatus, netIncome, oasIncome });
+  }
+
+  sumGis(): number | null {
+    const gisRates = this.periodValues().map((period) => this.gisRateCalc(period.date))
+    if (gisRates.every((rate) => (typeof rate === 'number'))) {
+      return (gisRates as number[]).reduce((acc, gisRates) => acc + (gisRates || 0), 0);
+    } else {
+      return null;
+    }
+  }
+
+  sumGisInitial(): number | null {
+    const periodValues = this.periodValues();
+    if (!periodValues.every((period) => typeof period.gisInitial === 'number')) {
+      return null;
+    }
+    return (periodValues as (Period & { gisInitial: number })[])
+      .reduce((acc, period) => acc + period.gisInitial, 0);
+  }
+
+  // Calculation Facades
+  // Actions
+
+  actionsRequired(): string[] | null {
     return this.benefitCalcService.actionsRequired({
       benefit: this.benefit,
       source: this.source,
-      oasSum,
-      oasInitialSum,
+      oasSum: this.sumOas(),
+      oasInitialSum: this.sumOasInitial(),
+      gisSum: this.sumGis(),
+      gisInitialSum: this.sumGisInitial(),
       numPeriods: this.numPeriods
     });
   }
